@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/mohamed8eo/govim/internal/buffer"
+	"golang.org/x/sys/unix"
 )
 
 type Mode int
@@ -44,8 +45,30 @@ func (ed *Editor) Render() {
 	var sb strings.Builder
 	sb.WriteString("\x1b[2J\x1b[H")
 
-	for _, line := range ed.Buf.Lines {
-		sb.WriteString(line)
+	fd := int(os.Stdout.Fd())
+	ws, err := unix.IoctlGetWinsize(fd, unix.TIOCGWINSZ)
+	rows := 24
+	cols := 80
+	if err == nil && ws.Row > 0 {
+		rows = int(ws.Row)
+		cols = int(ws.Col)
+	}
+
+	textRows := rows - 1
+	if textRows < 1 {
+		textRows = 1
+	}
+
+	for i := 0; i < textRows; i++ {
+		if i < len(ed.Buf.Lines) {
+			line := ed.Buf.Lines[i]
+			if len(line) > cols {
+				line = line[:cols]
+			}
+			sb.WriteString(line)
+		} else {
+			sb.WriteString("~")
+		}
 		sb.WriteString("\r\n")
 	}
 
@@ -66,17 +89,33 @@ func (ed *Editor) Render() {
 	}
 
 	if ed.Mode == ModeCommand {
-		sb.WriteString(fmt.Sprintf(":%s", ed.CmdBuf))
+		cmdLine := fmt.Sprintf(":%s", ed.CmdBuf)
+		if len(cmdLine) > cols {
+			cmdLine = cmdLine[:cols]
+		}
+		sb.WriteString(cmdLine)
 	} else if ed.statusMsg != "" {
-		sb.WriteString(ed.statusMsg)
+		msg := ed.statusMsg
+		if len(msg) > cols {
+			msg = msg[:cols]
+		}
+		sb.WriteString(msg)
 	} else {
 		statusLeft := fmt.Sprintf("\x1b[7m %s \x1b[0m %s", modeStr, filePath)
 		statusRight := fmt.Sprintf("\x1b[7m%s\x1b[0m", positionStr)
+		
+		leftLen := len(modeStr) + 2 + len(filePath) + 1
+		rightLen := len(positionStr)
+		padding := cols - leftLen - rightLen
+		if padding < 0 {
+			padding = 0
+		}
 		sb.WriteString(statusLeft)
-		sb.WriteString(" ")
+		if padding > 0 {
+			sb.WriteString(strings.Repeat(" ", padding))
+		}
 		sb.WriteString(statusRight)
 	}
-	sb.WriteString("\r\n")
 
 	sb.WriteString(fmt.Sprintf("\x1b[%d;%dH", ed.Cy+1, ed.Cx+1))
 	os.Stdout.WriteString(sb.String())
