@@ -25,6 +25,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Switch to alternate screen buffer
+	os.Stdout.WriteString("\x1b[?1049h")
+	defer func() {
+		// restore alternate screen
+		os.Stdout.WriteString("\x1b[?1049l")
+	}()
+
 	ed := editor.NewEditor(buf)
 	ed.Render()
 
