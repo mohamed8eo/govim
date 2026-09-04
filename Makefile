@@ -4,7 +4,7 @@ ARG ?= $(FILE)
 
 .PHONY: all build run test fmt vet clean
 
-all: clean build
+all: clean build test
 
 build:
 	@echo "Building $(BINARY)..."
@@ -14,9 +14,9 @@ run: build
 	@echo "Running $(BINARY)..."
 	./$(BINARY) $(ARG)
 
-test: build
-	@echo "Testing $(BINARY) with $(FILE)..."
-	./$(BINARY) $(FILE)
+test:
+	@echo "Running unit tests..."
+	go test -v ./...
 
 fmt:
 	go fmt ./...
