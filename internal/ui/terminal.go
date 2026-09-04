@@ -1,8 +1,6 @@
-package main
+package ui
 
 import (
-	"io"
-
 	"golang.org/x/sys/unix"
 )
 
@@ -16,7 +14,7 @@ const (
 	KeyEsc
 )
 
-func readKey(fd int, raw, peek *unix.Termios) (rune, Key, error) {
+func ReadKey(fd int, raw, peek *unix.Termios) (rune, Key, error) {
 	err := unix.IoctlSetTermios(fd, unix.TCSETS, raw)
 	if err != nil {
 		return 0, 0, err
@@ -24,14 +22,10 @@ func readKey(fd int, raw, peek *unix.Termios) (rune, Key, error) {
 
 	buf := make([]byte, 1)
 	n, err := unix.Read(fd, buf)
-	if err != nil {
+	if n <= 0 && err != nil {
 		return 0, 0, err
 	}
-	if n == 0 {
-		return 0, 0, io.EOF
-	}
 
-	// INFO:Check arrow key
 	if buf[0] == '\x1b' {
 		err := unix.IoctlSetTermios(fd, unix.TCSETS, peek)
 		if err != nil {
