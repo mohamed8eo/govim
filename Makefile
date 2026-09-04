@@ -1,7 +1,12 @@
 BINARY=govim
+FILE = test.txt
 
 
 build:
 	go build -o $(BINARY) .
 run:
-	go run .
+	./$(BINARY) $(ARG)
+
+
+test: build
+	./$(BINARY) $(FILE)

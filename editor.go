@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 )
@@ -11,12 +12,20 @@ type Mode int
 const (
 	ModeNormal Mode = iota
 	ModeInsert
+	ModeCommand
 )
 
 type Editor struct {
 	buf    *Buffer
 	cx, cy int
 	mode   Mode
+	cmdBuf string
+	quit   bool
+}
+type Commands struct {
+	save   bool
+	quit   bool
+	unkown bool
 }
 
 func NewEditor(buf *Buffer) *Editor {
@@ -36,9 +45,15 @@ func (ed *Editor) Render() {
 		sb.WriteString(line)
 		sb.WriteString("\r\n")
 	}
-	modeStr := "-- NORMAL --"
-	if ed.mode == ModeInsert {
+
+	var modeStr string
+	switch ed.mode {
+	case ModeNormal:
+		modeStr = "-- NORMAL --"
+	case ModeInsert:
 		modeStr = "-- INSERT --"
+	case ModeCommand:
+		modeStr = fmt.Sprintf(":%s", ed.cmdBuf)
 	}
 	sb.WriteString(modeStr)
 	sb.WriteString("\r\n")
@@ -114,4 +129,64 @@ func (ed *Editor) DeleteBack() {
 	)
 
 	ed.cy--
+}
+
+func (ed *Editor) DeleteX() {
+}
+
+func (ed *Editor) ExecuteCommand() {
+	cmd := checkCommand(ed.cmdBuf)
+	if cmd.unkown {
+		ed.cmdBuf = ""
+		ed.mode = ModeNormal
+		return
+	}
+	if cmd.save {
+		err := ed.Save()
+		if err != nil {
+			log.Printf("Error: %s\n", err.Error())
+		}
+
+	}
+	if cmd.quit {
+		ed.quit = true
+		return
+	}
+
+	ed.cmdBuf = ""
+	ed.mode = ModeNormal
+}
+
+func (ed *Editor) CancelCommand() {
+	ed.cmdBuf = ""
+	ed.mode = ModeNormal
+}
+
+func checkCommand(cmdBuf string) *Commands {
+	var cmd Commands
+	for _, command := range cmdBuf {
+		switch command {
+		case 'w':
+			cmd.save = true
+		case 'q':
+			cmd.quit = true
+
+		default:
+			cmd.unkown = true
+		}
+	}
+
+	return &cmd
+}
+
+func (ed *Editor) Save() error {
+	content := strings.Join(ed.buf.lines, "\n")
+
+	err := os.WriteFile(
+		ed.buf.path,
+		[]byte(content),
+		0o644,
+	)
+
+	return err
 }

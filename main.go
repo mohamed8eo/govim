@@ -49,9 +49,9 @@ func main() {
 			log.Printf("Error: %s", err.Error())
 		}
 
-		if pressKey == 'q' || pressKey == '\x03' {
-			break
-		}
+		// if pressKey == 'q' || pressKey == '\x03' {
+		// 	break
+		// }
 
 		switch ed.mode {
 		case ModeNormal:
@@ -69,6 +69,13 @@ func main() {
 				ed.mode = ModeInsert
 			case pressKey == 'i':
 				ed.mode = ModeInsert
+			case pressKey == 'x':
+				ed.DeleteX()
+			case pressKey == '\x13':
+				ed.Save()
+			case pressKey == ':':
+				ed.mode = ModeCommand
+				ed.cmdBuf = ""
 			}
 		case ModeInsert:
 			switch {
@@ -81,8 +88,22 @@ func main() {
 			case pressKey != 0:
 				ed.InsertChar(pressKey)
 			}
+		case ModeCommand:
+			switch {
+			case pressKey == '\r':
+				ed.ExecuteCommand()
+			case keyModel == KeyEsc:
+				ed.CancelCommand()
+
+			default:
+				ed.cmdBuf += string(pressKey)
+
+			}
 		}
 		ed.Render()
+		if ed.quit {
+			return
+		}
 
 	}
 }

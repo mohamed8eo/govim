@@ -8,18 +8,19 @@ import (
 
 type Buffer struct {
 	lines []string
+	path  string
 }
 
 func LoadFile(path string) (*Buffer, error) {
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
-		return &Buffer{}, err
+		return &Buffer{path: path}, err
 	}
 	defer file.Close()
 
 	buf, err := io.ReadAll(file)
 	if err != nil {
-		return &Buffer{}, err
+		return &Buffer{path: path}, err
 	}
 
 	data := string(buf)
@@ -27,7 +28,7 @@ func LoadFile(path string) (*Buffer, error) {
 	data = strings.TrimSuffix(data, "\n")
 	dataSlice := strings.Split(data, "\n")
 
-	return &Buffer{lines: dataSlice}, nil
+	return &Buffer{lines: dataSlice, path: path}, nil
 }
 
 func (b *Buffer) NumLine() int {
