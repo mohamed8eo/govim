@@ -1,6 +1,8 @@
 package main
 
 import (
+	"io"
+
 	"golang.org/x/sys/unix"
 )
 
@@ -22,8 +24,11 @@ func readKey(fd int, raw, peek *unix.Termios) (rune, Key, error) {
 
 	buf := make([]byte, 1)
 	n, err := unix.Read(fd, buf)
-	if n <= 0 && err != nil {
+	if err != nil {
 		return 0, 0, err
+	}
+	if n == 0 {
+		return 0, 0, io.EOF
 	}
 
 	// INFO:Check arrow key
@@ -69,20 +74,3 @@ func readKey(fd int, raw, peek *unix.Termios) (rune, Key, error) {
 
 	return rune(buf[0]), 0, nil
 }
-
-// func parseKey(key Key) (string, error) {
-// 	switch key {
-// 	case KeyUp:
-// 		return "up", nil
-// 	case KeyRight:
-// 		return "right", nil
-// 	case KeyLeft:
-// 		return "left", nil
-// 	case KeyDown:
-// 		return "down", nil
-// 	case KeyEsc:
-// 		return "ESC", nil
-// 	default:
-// 		return "", errors.New("unknown key")
-// 	}
-// }

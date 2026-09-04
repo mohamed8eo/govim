@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"io"
 	"log"
 	"os"
 
@@ -8,11 +10,10 @@ import (
 )
 
 func main() {
-	filePath := os.Args[1]
-	if filePath == "" {
+	if len(os.Args) < 2 {
 		log.Fatal("File path is required")
 	}
-	buffer, err := LoadFile(filePath)
+	buffer, err := LoadFile(os.Args[1])
 	if err != nil {
 		panic(err)
 	}
@@ -46,12 +47,12 @@ func main() {
 	for {
 		pressKey, keyModel, err := readKey(fd, &raw, &peek)
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
 			log.Printf("Error: %s", err.Error())
+			continue
 		}
-
-		// if pressKey == 'q' || pressKey == '\x03' {
-		// 	break
-		// }
 
 		switch ed.mode {
 		case ModeNormal:
@@ -72,7 +73,10 @@ func main() {
 			case pressKey == 'x':
 				ed.DeleteX()
 			case pressKey == '\x13':
-				ed.Save()
+				err := ed.Save()
+				if err != nil {
+					log.Fatalf("Error: %s\n", err.Error())
+				}
 			case pressKey == ':':
 				ed.mode = ModeCommand
 				ed.cmdBuf = ""
