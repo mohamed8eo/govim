@@ -26,8 +26,57 @@ func (ed *Editor) ExecuteCommand() {
 	ed.Mode = ModeNormal
 }
 
+func (ed *Editor) ExecuteSearch() {
+	ed.LastSearch = ed.SearchBuf
+	ed.SearchBuf = ""
+	ed.Mode = ModeNormal
+
+	if ed.LastSearch == "" {
+		return
+	}
+
+	ed.findNext()
+}
+
+func (ed *Editor) findNext() {
+	if ed.LastSearch == "" {
+		return
+	}
+
+	numLines := len(ed.Buf.Lines)
+	startCy := ed.Cy
+
+	// 1. rest of the current line, strictly after the cursor
+	line := ed.Buf.Lines[ed.Cy]
+	if ed.Cx+1 <= len(line) {
+		rest := line[ed.Cx+1:]
+		if idx := strings.Index(rest, ed.LastSearch); idx != -1 {
+			ed.Cx = ed.Cx + 1 + idx
+			return
+		}
+	}
+
+	// 2. every line after this one, wrapping around to the top
+	for offset := 1; offset <= numLines; offset++ {
+		cy := (startCy + offset) % numLines
+		line := ed.Buf.Lines[cy]
+		if idx := strings.Index(line, ed.LastSearch); idx != -1 {
+			ed.Cy = cy
+			ed.Cx = idx
+			return
+		}
+	}
+
+	ed.StatusMsg = fmt.Sprintf("Pattern not found: %s", ed.LastSearch)
+}
+
 func (ed *Editor) CancelCommand() {
-	ed.CmdBuf = ""
+	switch ed.Mode {
+	case ModeCommand:
+		ed.CmdBuf = ""
+	case ModeSearch:
+		ed.SearchBuf = ""
+	}
 	ed.Mode = ModeNormal
 }
 

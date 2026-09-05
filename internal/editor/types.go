@@ -11,16 +11,18 @@ const (
 	ModeInsert
 	ModeCommand
 	ModeOpending
+	ModeSearch
 )
 
 type Editor struct {
-	Buf       *buffer.Buffer
-	Cx, Cy    int
-	RowOff    int
-	Mode      Mode
-	CmdBuf    string
-	Quit      bool
-	StatusMsg string
+	Buf                   *buffer.Buffer
+	Cx, Cy                int
+	RowOff                int
+	Mode                  Mode
+	CmdBuf                string
+	Quit                  bool
+	StatusMsg             string
+	SearchBuf, LastSearch string
 }
 
 type Commands struct {

@@ -50,6 +50,8 @@ func (ed *Editor) Render() {
 		modeStr = "COMMAND "
 	case ModeOpending:
 		modeStr = "O-PENDING"
+	case ModeSearch:
+		modeStr = "Searching"
 	}
 
 	positionStr := fmt.Sprintf(" %d,%d ", ed.Cy+1, ed.Cx+1)

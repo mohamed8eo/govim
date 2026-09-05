@@ -89,13 +89,16 @@ func main() {
 				ed.Mode = editor.ModeInsert
 			case pressKey == 'd':
 				ed.Mode = editor.ModeOpending
+			case pressKey == ':':
+				ed.Mode = editor.ModeCommand
+				ed.CmdBuf = ""
+			case pressKey == '/':
+				ed.Mode = editor.ModeSearch
+				ed.SearchBuf = ""
 			case pressKey == 'x':
 				ed.DeleteX()
 			case pressKey == '\x13': // ctrl s
 				ed.SaveWithStatus()
-			case pressKey == ':':
-				ed.Mode = editor.ModeCommand
-				ed.CmdBuf = ""
 			case pressKey == 'D':
 				ed.DeleteLineToEnd()
 			case pressKey == '$':
@@ -134,6 +137,17 @@ func main() {
 			case ui.KeyEsc:
 				ed.Mode = editor.ModeNormal
 			}
+
+		case editor.ModeSearch:
+			switch {
+			case pressKey == '\r':
+				ed.ExecuteSearch()
+			case keyModel == ui.KeyEsc:
+				ed.CancelCommand()
+			default:
+				ed.SearchBuf += string(pressKey)
+			}
+
 		}
 		ed.Render()
 		if ed.Quit {
