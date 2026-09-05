@@ -67,7 +67,7 @@ func TestExecuteCommandUnknown(t *testing.T) {
 	if ed.Mode != ModeNormal {
 		t.Errorf("expected ModeNormal after executing unknown command, got %v", ed.Mode)
 	}
-	if ed.statusMsg != "unknown command: foo" {
-		t.Errorf("expected 'unknown command: foo', got %q", ed.statusMsg)
+	if ed.StatusMsg != "unknown command: foo" {
+		t.Errorf("expected 'unknown command: foo', got %q", ed.StatusMsg)
 	}
 }

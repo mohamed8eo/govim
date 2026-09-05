@@ -65,7 +65,7 @@ func main() {
 	}()
 
 	for {
-		pressKey, keyModel, err := ui.ReadKey(fd, &raw, &peek)
+		pressKey, keyModel, err := ui.ReadKey(fd, &raw, &peek, ed.Mode)
 		if err != nil {
 			log.Printf("Warning: error reading key: %v", err)
 			continue
@@ -87,15 +87,22 @@ func main() {
 				ed.Mode = editor.ModeInsert
 			case pressKey == 'i':
 				ed.Mode = editor.ModeInsert
+			case pressKey == 'd':
+				ed.Mode = editor.ModeOpending
 			case pressKey == 'x':
 				ed.DeleteX()
-			case pressKey == '\x13':
-				if sErr := ed.Save(); sErr != nil {
-					log.Printf("Error saving file: %v", sErr)
-				}
+			case pressKey == '\x13': // ctrl s
+				ed.SaveWithStatus()
 			case pressKey == ':':
 				ed.Mode = editor.ModeCommand
 				ed.CmdBuf = ""
+			case pressKey == 'D':
+				ed.DeleteLineToEnd()
+			case pressKey == '$':
+				ed.MoveToLineEnd()
+			case pressKey == '0':
+				ed.Cx = 0
+
 			}
 		case editor.ModeInsert:
 			switch {
@@ -116,6 +123,16 @@ func main() {
 				ed.CancelCommand()
 			default:
 				ed.CmdBuf += string(pressKey)
+			}
+
+		case editor.ModeOpending:
+			switch keyModel {
+			case ui.DeleteLine:
+				ed.DeleteLine()
+			case ui.DeleteWord:
+				ed.DeleteWord()
+			case ui.KeyEsc:
+				ed.Mode = editor.ModeNormal
 			}
 		}
 		ed.Render()

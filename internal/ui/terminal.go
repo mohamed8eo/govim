@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/mohamed8eo/govim/internal/editor"
 	"golang.org/x/sys/unix"
 )
 
@@ -14,7 +15,14 @@ const (
 	KeyEsc
 )
 
-func ReadKey(fd int, raw, peek *unix.Termios) (rune, Key, error) {
+type OpendingKey int
+
+const (
+	DeleteLine OpendingKey = iota + 1000
+	DeleteWord
+)
+
+func ReadKey(fd int, raw, peek *unix.Termios, mode editor.Mode) (rune, any, error) {
 	err := unix.IoctlSetTermios(fd, unix.TCSETS, raw)
 	if err != nil {
 		return 0, 0, err
@@ -27,7 +35,7 @@ func ReadKey(fd int, raw, peek *unix.Termios) (rune, Key, error) {
 	}
 
 	if buf[0] == '\x1b' {
-		err := unix.IoctlSetTermios(fd, unix.TCSETS, peek)
+		err = unix.IoctlSetTermios(fd, unix.TCSETS, peek)
 		if err != nil {
 			return 0, 0, err
 		}
@@ -64,6 +72,18 @@ func ReadKey(fd int, raw, peek *unix.Termios) (rune, Key, error) {
 	closeKey := buf[0]
 	if buf[0] == 'q' || buf[0] == '\x03' {
 		return rune(closeKey), 0, nil
+	}
+
+	if mode == editor.ModeOpending {
+		switch buf[0] {
+		case 'd':
+			return 0, DeleteLine, nil
+		case 'w':
+			return 0, DeleteWord, nil
+		default:
+			return 0, KeyEsc, nil
+
+		}
 	}
 
 	return rune(buf[0]), 0, nil
