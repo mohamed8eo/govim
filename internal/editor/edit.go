@@ -39,12 +39,23 @@ func (ed *Editor) InsertNewline() {
 	ed.Cx = 0
 }
 
-func (ed *Editor) MoveToLineEnd() {
-	line := ed.Buf.Lines[ed.Cy]
-
-	if ed.Cx <= len(line) {
-		ed.Cx = len(line) - 1
+func (ed *Editor) maxNormalCx(line string) int {
+	if len(line) == 0 {
+		return 0
 	}
+	return len(line) - 1
+}
+
+func (ed *Editor) MoveToLineEnd() {
+	if ed.Cy < 0 || ed.Cy >= len(ed.Buf.Lines) {
+		return
+	}
+	line := ed.Buf.Lines[ed.Cy]
+	if len(line) == 0 {
+		ed.Cx = 0
+		return
+	}
+	ed.Cx = ed.maxNormalCx(line)
 }
 
 // Delete
@@ -85,19 +96,22 @@ func (ed *Editor) DeleteBack() {
 
 func (ed *Editor) DeleteX() {
 	ed.StatusMsg = ""
+	if ed.Cy < 0 || ed.Cy >= len(ed.Buf.Lines) {
+		return
+	}
 	line := ed.Buf.Lines[ed.Cy]
-
 	if len(line) == 0 {
 		return
 	}
 
-	if ed.Cx > len(line) {
-		ed.Cx = len(line) - 1
+	if ed.Cx > ed.maxNormalCx(line) {
+		ed.Cx = ed.maxNormalCx(line)
 	}
 
 	ed.Buf.Lines[ed.Cy] = line[:ed.Cx] + line[ed.Cx+1:]
-	if ed.Cx == len(line)-1 {
-		ed.Cx--
+	newLine := ed.Buf.Lines[ed.Cy]
+	if ed.Cx > ed.maxNormalCx(newLine) {
+		ed.Cx = ed.maxNormalCx(newLine)
 	}
 }
 
@@ -159,22 +173,18 @@ func (ed *Editor) DeleteLineToEnd() {
 	if len(ed.Buf.Lines) == 0 {
 		return
 	}
-
-	line := ed.Buf.Lines[ed.Cy]
-	ed.Buf.Lines[ed.Cy] = line[:ed.Cx]
-
-	if ed.Cx > 0 {
-		if ed.Cy < 0 || ed.Cy >= len(ed.Buf.Lines) {
-			return
-		}
-		line := ed.Buf.Lines[ed.Cy]
-		if ed.Cx > len(line) {
-			ed.Cx = len(line)
-		}
-		line = line[:ed.Cx-1] + line[ed.Cx:]
-		ed.Buf.Lines[ed.Cy] = line
-
-		ed.Cx--
+	if ed.Cy < 0 || ed.Cy >= len(ed.Buf.Lines) {
 		return
 	}
+	line := ed.Buf.Lines[ed.Cy]
+	if len(line) == 0 {
+		ed.Cx = 0
+		return
+	}
+	if ed.Cx > ed.maxNormalCx(line) {
+		ed.Cx = ed.maxNormalCx(line)
+	}
+	ed.Buf.Lines[ed.Cy] = line[:ed.Cx]
+	newLine := ed.Buf.Lines[ed.Cy]
+	ed.Cx = ed.maxNormalCx(newLine)
 }
