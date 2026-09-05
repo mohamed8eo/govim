@@ -12,17 +12,23 @@ const (
 	ModeCommand
 	ModeOpending
 	ModeSearch
+	ModeVisual
 )
 
 type Editor struct {
 	Buf                   *buffer.Buffer
 	Cx, Cy                int
+	Vx, Vy                int
 	RowOff                int
 	Mode                  Mode
 	CmdBuf                string
 	Quit                  bool
 	StatusMsg             string
 	SearchBuf, LastSearch string
+	SearchPrefix          rune
+	PendingOp             rune
+	Register              string
+	RegisterLinewise      bool
 }
 
 type Commands struct {

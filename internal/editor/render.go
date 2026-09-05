@@ -26,6 +26,12 @@ func (ed *Editor) Render() {
 
 	ed.Scroll(textRows)
 
+	var startY, startX, endY, endX int
+	isVisual := ed.Mode == ModeVisual
+	if isVisual {
+		startY, startX, endY, endX = ed.selectionRange()
+	}
+
 	for i := 0; i < textRows; i++ {
 		fileRow := ed.RowOff + i
 		if fileRow < len(ed.Buf.Lines) {
@@ -33,7 +39,78 @@ func (ed *Editor) Render() {
 			if len(line) > cols {
 				line = line[:cols]
 			}
-			sb.WriteString(line)
+			if isVisual && fileRow >= startY && fileRow <= endY {
+				if startY == endY {
+					sX := startX
+					eX := endX
+					if sX > len(line) {
+						sX = len(line)
+					}
+					if eX >= len(line) {
+						eX = len(line) - 1
+					}
+					if sX < 0 {
+						sX = 0
+					}
+					if eX < 0 {
+						eX = -1
+					}
+					if sX <= eX && eX < len(line) {
+						before := line[:sX]
+						selected := line[sX : eX+1]
+						after := line[eX+1:]
+						sb.WriteString(before)
+						sb.WriteString("\x1b[7m")
+						sb.WriteString(selected)
+						sb.WriteString("\x1b[0m")
+						sb.WriteString(after)
+					} else {
+						sb.WriteString(line)
+					}
+				} else {
+					if fileRow == startY {
+						sX := startX
+						if sX > len(line) {
+							sX = len(line)
+						}
+						if sX < 0 {
+							sX = 0
+						}
+						before := line[:sX]
+						selected := line[sX:]
+						sb.WriteString(before)
+						sb.WriteString("\x1b[7m")
+						sb.WriteString(selected)
+						sb.WriteString("\x1b[0m")
+					} else if fileRow > startY && fileRow < endY {
+						sb.WriteString("\x1b[7m")
+						sb.WriteString(line)
+						sb.WriteString("\x1b[0m")
+					} else if fileRow == endY {
+						eX := endX
+						if eX >= len(line) {
+							eX = len(line) - 1
+						}
+						if eX < 0 {
+							eX = -1
+						}
+						if eX >= 0 && eX < len(line) {
+							selected := line[:eX+1]
+							after := line[eX+1:]
+							sb.WriteString("\x1b[7m")
+							sb.WriteString(selected)
+							sb.WriteString("\x1b[0m")
+							sb.WriteString(after)
+						} else {
+							sb.WriteString("\x1b[7m")
+							sb.WriteString(line)
+							sb.WriteString("\x1b[0m")
+						}
+					}
+				}
+			} else {
+				sb.WriteString(line)
+			}
 		} else {
 			sb.WriteString("~")
 		}
@@ -52,6 +129,8 @@ func (ed *Editor) Render() {
 		modeStr = "O-PENDING"
 	case ModeSearch:
 		modeStr = "Searching"
+	case ModeVisual:
+		modeStr = "VISUAL"
 	}
 
 	positionStr := fmt.Sprintf(" %d,%d ", ed.Cy+1, ed.Cx+1)
@@ -66,6 +145,16 @@ func (ed *Editor) Render() {
 			cmdLine = cmdLine[:cols]
 		}
 		sb.WriteString(cmdLine)
+	} else if ed.Mode == ModeSearch {
+		prefix := ed.SearchPrefix
+		if prefix == 0 {
+			prefix = '?'
+		}
+		searchLine := fmt.Sprintf("%c%s", prefix, ed.SearchBuf)
+		if len(searchLine) > cols {
+			searchLine = searchLine[:cols]
+		}
+		sb.WriteString(searchLine)
 	} else if ed.StatusMsg != "" {
 		msg := ed.StatusMsg
 		if len(msg) > cols {
@@ -88,4 +177,11 @@ func (ed *Editor) Render() {
 
 	sb.WriteString(fmt.Sprintf("\x1b[%d;%dH", (ed.Cy-ed.RowOff)+1, ed.Cx+1))
 	os.Stdout.WriteString(sb.String())
+}
+
+func (ed *Editor) selectionRange() (startY, startX, endY, endX int) {
+	if ed.Vy < ed.Cy || (ed.Vy == ed.Cy && ed.Vx <= ed.Cx) {
+		return ed.Vy, ed.Vx, ed.Cy, ed.Cx
+	}
+	return ed.Cy, ed.Cx, ed.Vy, ed.Vx
 }

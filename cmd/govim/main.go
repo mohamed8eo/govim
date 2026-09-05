@@ -88,13 +88,21 @@ func main() {
 			case pressKey == 'i':
 				ed.Mode = editor.ModeInsert
 			case pressKey == 'd':
+				ed.PendingOp = 'd'
+				ed.Mode = editor.ModeOpending
+			case pressKey == 'y':
+				ed.PendingOp = 'y'
 				ed.Mode = editor.ModeOpending
 			case pressKey == ':':
 				ed.Mode = editor.ModeCommand
 				ed.CmdBuf = ""
-			case pressKey == '/':
+			case pressKey == '/', pressKey == '?':
 				ed.Mode = editor.ModeSearch
+				ed.SearchPrefix = pressKey
 				ed.SearchBuf = ""
+			case pressKey == 'v':
+				ed.Mode = editor.ModeVisual
+				ed.Vx, ed.Vy = ed.Cx, ed.Cy
 			case pressKey == 'x':
 				ed.DeleteX()
 			case pressKey == '\x13': // ctrl s
@@ -129,12 +137,18 @@ func main() {
 			}
 
 		case editor.ModeOpending:
-			switch keyModel {
-			case ui.DeleteLine:
+			switch {
+			case keyModel == ui.KeyEsc:
+				ed.Mode = editor.ModeNormal
+			case ed.PendingOp == 'd' && pressKey == 'd':
 				ed.DeleteLine()
-			case ui.DeleteWord:
+			case ed.PendingOp == 'd' && pressKey == 'w':
 				ed.DeleteWord()
-			case ui.KeyEsc:
+			case ed.PendingOp == 'y' && pressKey == 'y':
+				ed.YankLine()
+			case ed.PendingOp == 'y' && pressKey == 'w':
+				ed.YankWord()
+			default:
 				ed.Mode = editor.ModeNormal
 			}
 
@@ -146,6 +160,21 @@ func main() {
 				ed.CancelCommand()
 			default:
 				ed.SearchBuf += string(pressKey)
+			}
+
+		case editor.ModeVisual:
+			switch {
+			case keyModel == ui.KeyLeft, pressKey == 'h':
+				ed.MoveCursor(-1, 0)
+			case keyModel == ui.KeyRight, pressKey == 'l':
+				ed.MoveCursor(1, 0)
+			case keyModel == ui.KeyDown, pressKey == 'j':
+				ed.MoveCursor(0, 1)
+			case keyModel == ui.KeyUp, pressKey == 'k':
+				ed.MoveCursor(0, -1)
+
+			case keyModel == ui.KeyEsc:
+				ed.Mode = editor.ModeNormal
 			}
 
 		}

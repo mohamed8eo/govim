@@ -58,6 +58,35 @@ func (ed *Editor) MoveToLineEnd() {
 	ed.Cx = ed.maxNormalCx(line)
 }
 
+// Yank
+func (ed *Editor) YankLine() {
+	line := ed.Buf.Lines[ed.Cy]
+	ed.Register = line
+	ed.RegisterLinewise = true
+	ed.Mode = ModeNormal
+}
+
+func (ed *Editor) YankWord() {
+	line := ed.Buf.Lines[ed.Cy]
+	wordStr := line[ed.Cx:]
+	idx := strings.IndexFunc(wordStr, func(r rune) bool {
+		switch r {
+		case ' ', '\n', '\t', '-', '.', ',':
+			return true
+		default:
+			return false
+		}
+	})
+
+	if idx == -1 {
+		ed.Register = line[ed.Cx:]
+	} else {
+		ed.Register = line[ed.Cx : ed.Cx+idx]
+	}
+	ed.RegisterLinewise = false
+	ed.Mode = ModeNormal
+}
+
 // Delete
 func (ed *Editor) DeleteBack() {
 	ed.StatusMsg = ""

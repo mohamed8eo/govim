@@ -119,3 +119,22 @@ func TestDeleteLineToEnd(t *testing.T) {
 		t.Errorf("expected cx = 1, got %d", ed.Cx)
 	}
 }
+
+func TestSelectionRange(t *testing.T) {
+	ed := NewEditor(&buffer.Buffer{Lines: []string{"hello"}})
+	// Anchor at (2,5), cursor at (0,3) -> cursor earlier
+	ed.Vx, ed.Vy = 5, 2
+	ed.Cx, ed.Cy = 3, 0
+	startY, startX, endY, endX := ed.selectionRange()
+	if startY != 0 || startX != 3 || endY != 2 || endX != 5 {
+		t.Errorf("expected (0,3,2,5), got (%d,%d,%d,%d)", startY, startX, endY, endX)
+	}
+
+	// Anchor at (0,1), cursor at (0,4) -> same row, anchor earlier
+	ed.Vx, ed.Vy = 1, 0
+	ed.Cx, ed.Cy = 4, 0
+	startY, startX, endY, endX = ed.selectionRange()
+	if startY != 0 || startX != 1 || endY != 0 || endX != 4 {
+		t.Errorf("expected (0,1,0,4), got (%d,%d,%d,%d)", startY, startX, endY, endX)
+	}
+}
