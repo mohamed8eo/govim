@@ -93,6 +93,8 @@ func main() {
 			case pressKey == 'y':
 				ed.PendingOp = 'y'
 				ed.Mode = editor.ModeOpending
+			case pressKey == 'p':
+				ed.Put()
 			case pressKey == ':':
 				ed.Mode = editor.ModeCommand
 				ed.CmdBuf = ""
@@ -102,6 +104,9 @@ func main() {
 				ed.SearchBuf = ""
 			case pressKey == 'v':
 				ed.Mode = editor.ModeVisual
+				ed.Vx, ed.Vy = ed.Cx, ed.Cy
+			case pressKey == 'V':
+				ed.Mode = editor.ModeVisualLine
 				ed.Vx, ed.Vy = ed.Cx, ed.Cy
 			case pressKey == 'x':
 				ed.DeleteX()
@@ -172,6 +177,21 @@ func main() {
 				ed.MoveCursor(0, 1)
 			case keyModel == ui.KeyUp, pressKey == 'k':
 				ed.MoveCursor(0, -1)
+			case pressKey == 'y':
+				ed.YankSelection()
+
+			case keyModel == ui.KeyEsc:
+				ed.Mode = editor.ModeNormal
+			}
+
+		case editor.ModeVisualLine:
+			switch {
+			case keyModel == ui.KeyDown, pressKey == 'j':
+				ed.MoveCursor(0, 1)
+			case keyModel == ui.KeyUp, pressKey == 'k':
+				ed.MoveCursor(0, -1)
+			case pressKey == 'y':
+				ed.YankVisualLine()
 
 			case keyModel == ui.KeyEsc:
 				ed.Mode = editor.ModeNormal

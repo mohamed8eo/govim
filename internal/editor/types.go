@@ -13,6 +13,7 @@ const (
 	ModeOpending
 	ModeSearch
 	ModeVisual
+	ModeVisualLine
 )
 
 type Editor struct {

@@ -66,6 +66,64 @@ func (ed *Editor) YankLine() {
 	ed.Mode = ModeNormal
 }
 
+func (ed *Editor) YankVisualLine() {
+	startY, _, endY, _ := ed.SelectionRange()
+
+	if startY > endY {
+		startY, endY = endY, startY
+	}
+
+	var lines []string
+	for y := startY; y <= endY; y++ {
+		if y >= 0 && y < len(ed.Buf.Lines) {
+			lines = append(lines, ed.Buf.Lines[y])
+		}
+	}
+
+	ed.Register = strings.Join(lines, "\n")
+	ed.RegisterLinewise = true
+	ed.Mode = ModeNormal
+}
+
+func (ed *Editor) YankSelection() {
+	startY, startX, endY, endX := ed.SelectionRange()
+
+	if startY > endY || (startY == endY && startX > endX) {
+		startY, endY = endY, startY
+		startX, endX = endX, startX
+	}
+
+	// One line
+	if startY == endY {
+		line := ed.Buf.Lines[startY]
+
+		ed.Register = line[startX:endX]
+		ed.RegisterLinewise = false
+		ed.Mode = ModeNormal
+		return
+	}
+
+	// Multi-line
+	var sb strings.Builder
+
+	// First line
+	sb.WriteString(ed.Buf.Lines[startY][startX:])
+	sb.WriteByte('\n')
+
+	// Middle lines
+	for y := startY + 1; y < endY; y++ {
+		sb.WriteString(ed.Buf.Lines[y])
+		sb.WriteByte('\n')
+	}
+
+	// Last line
+	sb.WriteString(ed.Buf.Lines[endY][:endX])
+
+	ed.Register = sb.String()
+	ed.RegisterLinewise = false
+	ed.Mode = ModeNormal
+}
+
 func (ed *Editor) YankWord() {
 	line := ed.Buf.Lines[ed.Cy]
 	wordStr := line[ed.Cx:]
@@ -85,6 +143,38 @@ func (ed *Editor) YankWord() {
 	}
 	ed.RegisterLinewise = false
 	ed.Mode = ModeNormal
+}
+
+func (ed *Editor) Put() {
+	if ed.Register == "" {
+		return
+	}
+
+	line := ed.Buf.Lines[ed.Cy]
+
+	// Linewise yank
+	if ed.RegisterLinewise {
+		linesToInsert := strings.Split(ed.Register, "\n")
+		newLines := make([]string, 0, len(ed.Buf.Lines)+len(linesToInsert))
+		newLines = append(newLines, ed.Buf.Lines[:ed.Cy+1]...)
+		newLines = append(newLines, linesToInsert...)
+		newLines = append(newLines, ed.Buf.Lines[ed.Cy+1:]...)
+		ed.Buf.Lines = newLines
+
+		ed.Cy += len(linesToInsert)
+		ed.Cx = 0
+		return
+	}
+
+	// Characterwise yank
+	if ed.Cx > len(line) {
+		ed.Cx = len(line)
+	}
+
+	line = line[:ed.Cx] + ed.Register + line[ed.Cx:]
+	ed.Buf.Lines[ed.Cy] = line
+
+	ed.Cx += len(ed.Register)
 }
 
 // Delete

@@ -29,7 +29,7 @@ func (ed *Editor) Render() {
 	var startY, startX, endY, endX int
 	isVisual := ed.Mode == ModeVisual
 	if isVisual {
-		startY, startX, endY, endX = ed.selectionRange()
+		startY, startX, endY, endX = ed.SelectionRange()
 	}
 
 	for i := 0; i < textRows; i++ {
@@ -131,6 +131,8 @@ func (ed *Editor) Render() {
 		modeStr = "Searching"
 	case ModeVisual:
 		modeStr = "VISUAL"
+	case ModeVisualLine:
+		modeStr = "VISUAL LINE"
 	}
 
 	positionStr := fmt.Sprintf(" %d,%d ", ed.Cy+1, ed.Cx+1)
@@ -179,7 +181,22 @@ func (ed *Editor) Render() {
 	os.Stdout.WriteString(sb.String())
 }
 
-func (ed *Editor) selectionRange() (startY, startX, endY, endX int) {
+func (ed *Editor) SelectionRange() (startY, startX, endY, endX int) {
+	sy, sx, ey, ex := ed.Vy, ed.Vx, ed.Cy, ed.Cx
+	if sy > ey || (sy == ey && sx > ex) {
+		sy, ey = ey, sy
+		sx, ex = ex, sx
+	}
+	if ed.Mode == ModeVisualLine {
+		eX := 0
+		if ey >= 0 && ey < len(ed.Buf.Lines) {
+			eX = len(ed.Buf.Lines[ey]) - 1
+			if eX < 0 {
+				eX = 0
+			}
+		}
+		return sy, 0, ey, eX
+	}
 	if ed.Vy < ed.Cy || (ed.Vy == ed.Cy && ed.Vx <= ed.Cx) {
 		return ed.Vy, ed.Vx, ed.Cy, ed.Cx
 	}

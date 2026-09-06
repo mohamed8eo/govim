@@ -125,7 +125,7 @@ func TestSelectionRange(t *testing.T) {
 	// Anchor at (2,5), cursor at (0,3) -> cursor earlier
 	ed.Vx, ed.Vy = 5, 2
 	ed.Cx, ed.Cy = 3, 0
-	startY, startX, endY, endX := ed.selectionRange()
+	startY, startX, endY, endX := ed.SelectionRange()
 	if startY != 0 || startX != 3 || endY != 2 || endX != 5 {
 		t.Errorf("expected (0,3,2,5), got (%d,%d,%d,%d)", startY, startX, endY, endX)
 	}
@@ -133,8 +133,27 @@ func TestSelectionRange(t *testing.T) {
 	// Anchor at (0,1), cursor at (0,4) -> same row, anchor earlier
 	ed.Vx, ed.Vy = 1, 0
 	ed.Cx, ed.Cy = 4, 0
-	startY, startX, endY, endX = ed.selectionRange()
+	startY, startX, endY, endX = ed.SelectionRange()
 	if startY != 0 || startX != 1 || endY != 0 || endX != 4 {
 		t.Errorf("expected (0,1,0,4), got (%d,%d,%d,%d)", startY, startX, endY, endX)
+	}
+}
+
+func TestYankVisualLine(t *testing.T) {
+	buf := &buffer.Buffer{Lines: []string{"line1", "line2", "line3"}, Path: "dummy.txt"}
+	ed := NewEditor(buf)
+	ed.Mode = ModeVisualLine
+	ed.Vy, ed.Vx = 0, 0
+	ed.Cy, ed.Cx = 1, 0
+
+	ed.YankVisualLine()
+	if !ed.RegisterLinewise {
+		t.Errorf("expected RegisterLinewise to be true")
+	}
+	if ed.Register != "line1\nline2" {
+		t.Errorf("expected register 'line1\\nline2', got %q", ed.Register)
+	}
+	if ed.Mode != ModeNormal {
+		t.Errorf("expected ModeNormal after yank, got %v", ed.Mode)
 	}
 }
